@@ -150,11 +150,11 @@ const getPostByCategoryName = async (req, res) => {
 
 // CREATE
 const createPost = async (req, res) => {
-  if (req.files === null)
+  if (req.file === null)
     return res.status(400).json({ message: "No File Uploaded" });
 
-  const file = req.files.image;
-  const fileSize = file.data.length;
+  const file = req.file.originalname;
+  const fileSize = file.data.size;
   const ext = path.extname(file.name);
   const fileName = file.md5 + ext;
   const url = `${req.protocol}://${req.get("host")}/images/${fileName}`;
@@ -165,27 +165,24 @@ const createPost = async (req, res) => {
   if (fileSize > 5000000)
     return res.status(422).json({ message: "Image must be less than 5 MB" });
 
-  file.mv(`./public/images/${fileName}`, async (error) => {
-    if (error) return res.status(500).json({ message: error.message });
-    try {
-      const createPost = new Post({
-        title: req.body.title,
-        content: req.body.content,
-        description: req.body.description,
-        category: req.body.category,
-        slug: slugify(req.body.title).toLowerCase(),
-        image: fileName,
-        imageUrl: url,
-      });
-      await createPost.save();
-      res.status(201).json({
-        message: "Post created successfuly",
-        data: createPost,
-      });
-    } catch (error) {
-      res.status(400).json({ message: error.message });
-    }
-  });
+  try {
+    const createPost = new Post({
+      title: req.body.title,
+      content: req.body.content,
+      description: req.body.description,
+      category: req.body.category,
+      slug: slugify(req.body.title).toLowerCase(),
+      image: fileName,
+      imageUrl: url,
+    });
+    await createPost.save();
+    res.status(201).json({
+      message: "Post created successfuly",
+      data: createPost,
+    });
+  } catch (error) {
+    res.status(400).json({ message: error.message });
+  }
 };
 
 // UPDATE
