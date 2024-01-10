@@ -4,6 +4,7 @@ const Category = require("../models/Category");
 const Post = require("../models/Post");
 const Comment = require("../models/Comment");
 const slugify = require("slugify");
+const md5 = require("md5");
 
 // GET ALL
 const getPosts = async (req, res) => {
@@ -59,7 +60,7 @@ const getPosts = async (req, res) => {
           .sort("-createdAt");
         res.status(200).json({
           docs: posts,
-          totalDocs: posts.length
+          totalDocs: posts.length,
         });
       }
     } catch (error) {
@@ -87,7 +88,7 @@ const getPosts = async (req, res) => {
           .sort("-createdAt");
         res.status(200).json({
           docs: posts,
-          totalDocs: posts.length
+          totalDocs: posts.length,
         });
       }
     } catch (error) {
@@ -140,7 +141,6 @@ const getPostByCategoryName = async (req, res) => {
       options
     );
     res.status(200).json(posts);
-    
   } catch (error) {
     res.status(400).json({
       message: error.message,
@@ -150,13 +150,13 @@ const getPostByCategoryName = async (req, res) => {
 
 // CREATE
 const createPost = async (req, res) => {
-  if (req.file === null)
+  if (req.file == null)
     return res.status(400).json({ message: "No File Uploaded" });
 
   const file = req.file.originalname;
-  const fileSize = file.data.size;
-  const ext = path.extname(file.name);
-  const fileName = file.md5 + ext;
+  const fileSize = req.file.size;
+  const ext = path.extname(file);
+  const fileName = md5(file) + ext;
   const url = `${req.protocol}://${req.get("host")}/images/${fileName}`;
   const allowedType = [".png", ".jpg", ".jpeg"];
 
@@ -164,6 +164,8 @@ const createPost = async (req, res) => {
     return res.status(422).json({ message: "Invalid Images" });
   if (fileSize > 5000000)
     return res.status(422).json({ message: "Image must be less than 5 MB" });
+
+  // return res.status(400).json({ message: url });
 
   try {
     const createPost = new Post({
@@ -195,10 +197,11 @@ const updatePost = async (req, res) => {
   if (req.files === null) {
     fileName = post.image;
   } else {
-    const file = req.files.image;
-    const fileSize = file.data.length;
-    const ext = path.extname(file.name);
-    fileName = file.md5 + ext;
+    const file = req.file.originalname;
+    const fileSize = req.file.size;
+    const ext = path.extname(file);
+    const fileName = md5(file) + ext;
+    const url = `${req.protocol}://${req.get("host")}/images/${fileName}`;
     const allowedType = [".png", ".jpg", ".jpeg"];
 
     if (!allowedType.includes(ext.toLowerCase()))
@@ -208,9 +211,6 @@ const updatePost = async (req, res) => {
 
     const filepath = `./public/images/${post.image}`;
     fs.unlinkSync(filepath);
-    file.mv(`./public/images/${fileName}`, (error) => {
-      if (error) return res.status(500).json({ message: error.message });
-    });
   }
 
   const url = `${req.protocol}://${req.get("host")}/images/${fileName}`;
