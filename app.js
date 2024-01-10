@@ -11,7 +11,8 @@ const port = process.env.PORT || 5000;
 const DB_CONNECTION = process.env.DB_CONNECTION;
 
 app.use(morgan('dev'));
-app.use(express.static("public"));
+// app.use(express.static("public"));
+app.use(express.static(__dirname + '/public'));
 app.use(FileUpload());
 app.use(cors());
 app.use(bodyParser.json());
