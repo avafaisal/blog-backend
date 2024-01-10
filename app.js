@@ -16,7 +16,7 @@ app.use(morgan('dev'));
 // app.use(FileUpload());
 
 app.use(express.static(__dirname + '/tmp'));
-app.use('./tmp', express.static('tmp'));
+app.use('/tmp', express.static('tmp'));
 
 app.use(cors());
 app.use(bodyParser.json());
