@@ -157,7 +157,7 @@ const createPost = async (req, res) => {
   const fileSize = req.file.size;
   const ext = path.extname(file);
   const fileName = md5(file) + ext;
-  const url = `${req.protocol}://${req.get("host")}/images/${fileName}`;
+  const url = `${req.protocol}://${req.get("host")}/tmp/${fileName}`;
   const allowedType = [".png", ".jpg", ".jpeg"];
 
   if (!allowedType.includes(ext.toLowerCase()))
