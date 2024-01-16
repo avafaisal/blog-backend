@@ -46,6 +46,7 @@ const getCommentByPost = async (req, res) => {
   try {
     const comment = await Comment.find({ post: req.params.id })
       .select("_id comment post")
+      .sort("-createdAt")
       .populate({ path: "post", select: "_id title" });
     res.status(200).json({
       docs: comment,
