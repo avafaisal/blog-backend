@@ -5,6 +5,8 @@ const Post = require("../models/Post");
 const Comment = require("../models/Comment");
 const slugify = require("slugify");
 const md5 = require("md5");
+const { put, del } = require("@vercel/blob");
+const BLOB_TOKEN = process.env.BLOB_READ_WRITE_TOKEN;
 
 // GET ALL
 const getPosts = async (req, res) => {
@@ -150,25 +152,19 @@ const getPostByCategoryName = async (req, res) => {
 
 // CREATE
 const createPost = async (req, res) => {
-  if (req.file == null)
-    return res.status(400).json({ message: "No File Uploaded" });
+  if (!req.files) return res.status(400).json({ message: "No File Uploaded" });
 
-  const file = req.file.originalname;
-  const fileSize = req.file.size;
+  const file = req.files.image.name;
   const ext = path.extname(file);
-  const fileName = md5(file) + ext;
-  // const url = `${req.protocol}://${req.get("host")}/tmp/${fileName}`;
-  const url = __dirname + req.file.path
-  const allowedType = [".png", ".jpg", ".jpeg"];
-
-  if (!allowedType.includes(ext.toLowerCase()))
-    return res.status(422).json({ message: "Invalid Images" });
-  if (fileSize > 5000000)
-    return res.status(422).json({ message: "Image must be less than 5 MB" });
-
-  // return res.status(400).json({ message: url });
+  const fileName = req.files.image.md5 + ext;
 
   try {
+    const { url } = await put(fileName, req.files.image.data, {
+      access: "public",
+      addRandomSuffix: false,
+      token: BLOB_TOKEN,
+    });
+
     const createPost = new Post({
       title: req.body.title,
       content: req.body.content,
@@ -179,6 +175,7 @@ const createPost = async (req, res) => {
       imageUrl: url,
     });
     await createPost.save();
+
     res.status(201).json({
       message: "Post created successfuly",
       data: createPost,
@@ -193,53 +190,66 @@ const updatePost = async (req, res) => {
   const post = await Post.findById({ _id: req.params.id });
   if (!post) return res.status(404).json({ message: "No Data Found" });
 
-  let fileName = "";
-
-  if (req.files === null) {
-    fileName = post.image;
+  if (!req.files) {
+    try {
+      await Post.updateOne(
+        { _id: req.params.id },
+        {
+          title: req.body.title,
+          content: req.body.content,
+          description: req.body.description,
+          category: req.body.category,
+          slug: slugify(req.body.title).toLowerCase(),
+        }
+      );
+      res.status(201).json({
+        message: "Post updated successfuly",
+      });
+    } catch (error) {
+      res.status(400).json({ message: error.message });
+    }
   } else {
-    const file = req.file.originalname;
-    const fileSize = req.file.size;
+    const file = req.files.name;
     const ext = path.extname(file);
     const fileName = md5(file) + ext;
-    const url = `${req.protocol}://${req.get("host")}/images/${fileName}`;
-    const allowedType = [".png", ".jpg", ".jpeg"];
-
-    if (!allowedType.includes(ext.toLowerCase()))
-      return res.status(422).json({ message: "Invalid Images" });
-    if (fileSize > 5000000)
-      return res.status(422).json({ message: "Image must be less than 5 MB" });
-
-    const filepath = `./public/images/${post.image}`;
-    fs.unlinkSync(filepath);
-  }
-
-  const url = `${req.protocol}://${req.get("host")}/images/${fileName}`;
-
-  try {
-    await Post.updateOne(
-      { _id: req.params.id },
-      {
-        title: req.body.title,
-        content: req.body.content,
-        description: req.body.description,
-        category: req.body.category,
-        slug: slugify(req.body.title).toLowerCase(),
-        image: fileName,
-        imageUrl: url,
-      }
-    );
-    res.status(201).json({
-      message: "Post updated successfuly",
+    await del(post.url, {
+      token: BLOB_TOKEN,
     });
-  } catch (error) {
-    res.status(400).json({ message: error.message });
+    try {
+      const { url } = await put(fileName, req.files, {
+        access: "public",
+        addRandomSuffix: false,
+        token: BLOB_TOKEN,
+      });
+      await Post.updateOne(
+        { _id: req.params.id },
+        {
+          title: req.body.title,
+          content: req.body.content,
+          description: req.body.description,
+          category: req.body.category,
+          slug: slugify(req.body.title).toLowerCase(),
+          image: fileName,
+          imageUrl: url,
+        }
+      );
+      res.status(201).json({
+        message: "Post updated successfuly",
+      });
+    } catch (error) {
+      res.status(400).json({ message: error.message });
+    }
   }
 };
 
 // DELETE
 const deletePost = async (req, res) => {
+  const post = await Post.findById({ _id: req.params.id });
+  if (!post) return res.status(404).json({ message: "No Data Found" });
   try {
+    await del(post.url, {
+      token: BLOB_TOKEN,
+    });
     // Delete Post by id
     await Post.deleteOne({ _id: req.params.id });
     // Delete All Comment by Post id
