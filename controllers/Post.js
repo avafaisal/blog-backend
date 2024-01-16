@@ -212,7 +212,7 @@ const updatePost = async (req, res) => {
     const file = req.files.name;
     const ext = path.extname(file);
     const fileName = md5(file) + ext;
-    await del(post.url, {
+    await del(post.imageUrl, {
       token: BLOB_TOKEN,
     });
     try {
@@ -247,7 +247,7 @@ const deletePost = async (req, res) => {
   const post = await Post.findById({ _id: req.params.id });
   if (!post) return res.status(404).json({ message: "No Data Found" });
   try {
-    await del(post.url, {
+    await del(post.imageUrl, {
       token: BLOB_TOKEN,
     });
     // Delete Post by id
