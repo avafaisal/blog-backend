@@ -4,7 +4,7 @@ const mongoose = require("mongoose");
 require("dotenv").config();
 mongoose.set("strictQuery", true);
 const bodyParser = require("body-parser");
-// const FileUpload = require("express-fileupload");
+const FileUpload = require("express-fileupload");
 const cors = require("cors");
 const morgan = require("morgan");
 const port = process.env.PORT || 5000;
@@ -13,11 +13,7 @@ const DB_CONNECTION = process.env.DB_CONNECTION;
 app.use(morgan('dev'));
 // app.use(express.static("public"));
 // app.use(express.static(__dirname + '/public'));
-// app.use(FileUpload());
-
-app.use(express.static(__dirname + '/tmp'));
-app.use('/tmp', express.static('tmp'));
-
+app.use(FileUpload());
 app.use(cors());
 app.use(bodyParser.json());
 app.use(bodyParser.urlencoded({ extended: true }));
