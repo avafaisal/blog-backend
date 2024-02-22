@@ -7,7 +7,7 @@ const postGenerator = async (req, res) => {
   let category = req.body.category;
 
   await axios
-    .post("https://prickly-bikini-ray.cyclic.app/generate", { title })
+    .post("https://prickly-bikini-ray.cyclic.app/generate", { keyword: title })
     .then((result) => {
       const createPost = new Post({
         title: title,
