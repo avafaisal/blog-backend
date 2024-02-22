@@ -3,27 +3,32 @@ const slugify = require("slugify");
 const axios = require("axios");
 
 const postGenerator = async (req, res) => {
-  let title = req.body.title;
+  let keyword = req.body.keyword.replace(" ", "-");
   let category = req.body.category;
+  let title = req.body.keyword
 
-  await axios
-    .post("https://prickly-bikini-ray.cyclic.app/generate", { keyword: title })
-    .then((result) => {
+  try {
+    const response = await axios.get(
+      `https://prickly-bikini-ray.cyclic.app/generator/${keyword}`
+    );
+    const result = response.data
+
+    if (result) {
       const createPost = new Post({
         title: title,
-        content: result.data.content,
-        description: result.data.description,
+        content: result.content,
+        description: result.description,
         category: category,
         slug: slugify(title),
-        image: result.data.image,
-        imageUrl: result.data.image,
+        image: result.image,
+        imageUrl: result.image,
       });
       createPost.save();
-      res.status(201).json({ message: "Post genarator successfully" });
-    })
-    .catch((error) => {
-      res.json({ message: error.message });
-    });
+      res.status(201).json({ data: result });
+    }
+  } catch (error) {
+    res.json({ message: error.message });
+  }
 };
 
 module.exports = {
